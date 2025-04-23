@@ -2,20 +2,26 @@ services:
   - type: web
     name: civicease-api
     env: node
+    region: singapore
+    plan: free
     buildCommand: npm install
     startCommand: node server.js
+    healthCheckPath: /api/test
+    autoDeploy: true
     envVars:
       - key: NODE_ENV
         value: production
       - key: PORT
         value: 5001
       - key: MONGO_URI
-        sync: false
+        value: mongodb+srv://maneeshbugaliya:5w2QuSGYZczmTfjU@cluster0.m8bx5gy.mongodb.net/civicease?retryWrites=true&w=majority&appName=Cluster0
       - key: JWT_SECRET
-        sync: false
+        value: mK9PxWvJ2Hn8qL5aY3dR7fC1bN4tE6gU
+      - key: JWT_EXPIRY
+        value: 7d
       - key: RATE_LIMIT_WINDOW_MS
         value: 900000
       - key: RATE_LIMIT_MAX_REQUESTS
         value: 100
       - key: ALLOWED_ORIGINS
-        sync: false
+        value: https://civicease.vercel.app

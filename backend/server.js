@@ -29,8 +29,11 @@ app.use('/api/', limiter);
 app.use(express.json({ limit: '10kb' })); // Body limit is 10kb
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 
-// CORS configuration
-const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:3000').split(',');
+// CORS configuration for production
+const allowedOrigins = process.env.NODE_ENV === 'production' 
+  ? ['https://civic-easy.vercel.app/login']
+  : ['http://localhost:3000'];
+
 app.use(cors({
   origin: function(origin, callback) {
     // Allow requests with no origin (like mobile apps or curl requests)
@@ -41,7 +44,9 @@ app.use(cors({
     }
     return callback(null, true);
   },
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 // Request logging middleware (only in development)
@@ -67,7 +72,8 @@ const serviceRequestRoutes = require('./routes/serviceRequest');
 app.get('/api/test', (req, res) => {
   res.json({ 
     message: 'Server is running properly',
-    environment: process.env.NODE_ENV
+    environment: process.env.NODE_ENV,
+    timestamp: new Date().toISOString()
   });
 });
 
@@ -92,13 +98,29 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Connect to MongoDB
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log('MongoDB Connected Successfully'))
-  .catch(err => {
+// MongoDB connection options
+const mongooseOptions = {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+  serverSelectionTimeoutMS: 5000,
+  socketTimeoutMS: 45000,
+};
+
+// Connect to MongoDB with retry logic
+const connectWithRetry = async () => {
+  console.log('Attempting to connect to MongoDB...');
+  try {
+    await mongoose.connect(process.env.MONGO_URI, mongooseOptions);
+    console.log('MongoDB Connected Successfully');
+  } catch (err) {
     console.error('MongoDB connection error:', err);
-    process.exit(1);
-  });
+    console.log('Retrying connection in 5 seconds...');
+    setTimeout(connectWithRetry, 5000);
+  }
+};
+
+// Initial connection attempt
+connectWithRetry();
 
 const PORT = process.env.PORT || 5001;
 
