@@ -31,7 +31,7 @@ app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 
 // CORS configuration for production
 const allowedOrigins = process.env.NODE_ENV === 'production' 
-  ? ['https://civic-easy.vercel.app/login']
+  ? ['https://civic-easy.vercel.app']
   : ['http://localhost:3000'];
 
 app.use(cors({
@@ -70,11 +70,16 @@ const serviceRequestRoutes = require('./routes/serviceRequest');
 
 // Test endpoint
 app.get('/api/test', (req, res) => {
-  res.json({ 
-    message: 'Server is running properly',
-    environment: process.env.NODE_ENV,
-    timestamp: new Date().toISOString()
-  });
+  try {
+    res.json({ 
+      message: 'Server is running properly',
+      environment: process.env.NODE_ENV || 'development',
+      timestamp: new Date().toISOString(),
+      status: 'healthy'
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 });
 
 // Mount routes
